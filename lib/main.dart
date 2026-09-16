@@ -4,14 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/app_config.dart';
+import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/learning_repository.dart';
-import 'models/app_models.dart';
 import 'presentation/app_state.dart';
-import 'views/admin/admin_shell.dart';
-import 'views/auth/auth_page.dart';
-import 'views/customer/customer_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,26 +69,14 @@ class LunaVerseApp extends StatelessWidget {
         authRepository ?? const UnavailableAuthRepository(),
         learningRepository ?? DemoLearningRepository(),
       )..restoreSession(),
-      child: MaterialApp(
+      child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
         title: 'Nova Language Learning',
-        theme: AppTheme.light,
-        home: const _AppRouter(),
+        theme: AppTheme.dark,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
+        routerConfig: AppRouter.router,
       ),
     );
-  }
-}
-
-class _AppRouter extends StatelessWidget {
-  const _AppRouter();
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    if (state.isLoading)
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (state.currentUser == null) return const AuthPage();
-    return state.currentUser!.role == UserRole.admin
-        ? const AdminShell()
-        : const CustomerShell();
   }
 }
