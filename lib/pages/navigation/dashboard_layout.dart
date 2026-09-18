@@ -20,23 +20,77 @@ class DashboardLayout extends StatefulWidget {
 
 class _DashboardLayoutState extends State<DashboardLayout> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final TextEditingController _searchController = TextEditingController();
+  TextEditingController? _searchFieldController;
 
   static const List<_NavItem> _navItems = [
-    _NavItem(label: 'Dashboard', icon: Icons.grid_view_rounded, route: '/dashboard'),
-    _NavItem(label: 'Practice', icon: Icons.sports_esports_rounded, route: '/practice'),
-    _NavItem(label: 'Languages', icon: Icons.translate_rounded, route: '/languages'),
-    _NavItem(label: 'Vocabulary', icon: Icons.auto_stories_rounded, route: '/vocabulary'),
-    _NavItem(label: 'Achievements', icon: Icons.workspace_premium_rounded, route: '/achievements'),
-    _NavItem(label: 'Progress', icon: Icons.insights_rounded, route: '/progress'),
-    _NavItem(label: 'Calendar', icon: Icons.calendar_month_rounded, route: '/calendar'),
-    _NavItem(label: 'Settings', icon: Icons.settings_rounded, route: '/settings'),
+    _NavItem(
+      label: 'Dashboard',
+      icon: Icons.grid_view_rounded,
+      route: '/dashboard',
+    ),
+    _NavItem(
+      label: 'Practice',
+      icon: Icons.sports_esports_rounded,
+      route: '/practice',
+    ),
+    _NavItem(
+      label: 'Languages',
+      icon: Icons.translate_rounded,
+      route: '/languages',
+    ),
+    _NavItem(
+      label: 'Vocabulary',
+      icon: Icons.auto_stories_rounded,
+      route: '/vocabulary',
+    ),
+    _NavItem(
+      label: 'Achievements',
+      icon: Icons.workspace_premium_rounded,
+      route: '/achievements',
+    ),
+    _NavItem(
+      label: 'Progress',
+      icon: Icons.insights_rounded,
+      route: '/progress',
+    ),
+    _NavItem(
+      label: 'Calendar',
+      icon: Icons.calendar_month_rounded,
+      route: '/calendar',
+    ),
+    _NavItem(
+      label: 'Settings',
+      icon: Icons.settings_rounded,
+      route: '/settings',
+    ),
   ];
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _navigateToMenu(
+    BuildContext context,
+    String query,
+    TextEditingController controller,
+  ) {
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) return;
+
+    _NavItem? matchedItem;
+    for (final item in _navItems) {
+      if (item.label.toLowerCase() == normalizedQuery ||
+          item.route.substring(1) == normalizedQuery) {
+        matchedItem = item;
+        break;
+      }
+    }
+
+    controller.clear();
+    if (matchedItem != null) {
+      context.go(matchedItem.route);
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Menu "$query" tidak ditemukan.')));
   }
 
   @override
@@ -75,6 +129,110 @@ class _DashboardLayoutState extends State<DashboardLayout> {
     );
   }
 
+  Widget _buildSearchAutocomplete(BuildContext context) {
+    return Autocomplete<String>(
+      optionsBuilder: (textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (query.isEmpty) return const Iterable<String>.empty();
+        return _navItems
+            .map((item) => item.label)
+            .where((label) => label.toLowerCase().contains(query));
+      },
+      onSelected: (label) {
+        final item = _navItems.firstWhere((item) => item.label == label);
+        _searchFieldController?.clear();
+        context.go(item.route);
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Material(
+          color: AppColors.dark800,
+          elevation: 8,
+          borderRadius: BorderRadius.circular(10),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 280),
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              shrinkWrap: true,
+              itemCount: options.length,
+              itemBuilder: (context, index) {
+                final label = options.elementAt(index);
+                final item = _navItems.firstWhere(
+                  (item) => item.label == label,
+                );
+                return InkWell(
+                  onTap: () => onSelected(label),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(item.icon, color: AppColors.brand300, size: 18),
+                        const SizedBox(width: 10),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        _searchFieldController = controller;
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (query) {
+            onFieldSubmitted();
+            _navigateToMenu(context, query, controller);
+          },
+          style: const TextStyle(color: Colors.white, fontSize: 13),
+          decoration: InputDecoration(
+            hintText: 'Search courses, vocabulary...',
+            hintStyle: TextStyle(
+              color: Colors.white.withValues(alpha: 0.35),
+              fontSize: 13,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: Colors.white.withValues(alpha: 0.35),
+              size: 18,
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.12),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.12),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.brand500),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildTopHeader(
     BuildContext context,
     bool isDesktop,
@@ -83,7 +241,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   ) {
     return Container(
       height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 20 : 8),
       decoration: const BoxDecoration(
         color: Color(0x99120018),
         border: Border(bottom: BorderSide(color: Color(0x0DFFFFFF))),
@@ -92,6 +250,8 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         children: [
           if (!isDesktop)
             IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
               icon: const Icon(Icons.menu_rounded, color: Colors.white),
               onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             ),
@@ -100,38 +260,20 @@ class _DashboardLayoutState extends State<DashboardLayout> {
           Expanded(
             child: Container(
               height: 40,
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: 'Search courses, vocabulary...',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
-                  prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.35), size: 18),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.brand500),
-                  ),
-                ),
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 400 : double.infinity,
               ),
+              child: _buildSearchAutocomplete(context),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isDesktop ? 16 : 6),
 
           // Streak Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 12 : 6,
+              vertical: isDesktop ? 6 : 4,
+            ),
             decoration: BoxDecoration(
               color: Colors.orange.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
@@ -140,34 +282,40 @@ class _DashboardLayoutState extends State<DashboardLayout> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🔥', style: TextStyle(fontSize: 13)),
-                const SizedBox(width: 5),
+                const Text('🔥', style: TextStyle(fontSize: 11)),
+                SizedBox(width: isDesktop ? 5 : 2),
                 Text(
                   '${state.streak.count} Days',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.orange,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: isDesktop ? 12 : 10,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: isDesktop ? 10 : 4),
 
           // Notification Bell
           Stack(
             alignment: Alignment.center,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: isDesktop ? 36 : 32,
+                height: isDesktop ? 36 : 32,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  borderRadius: BorderRadius.circular(isDesktop ? 10 : 8),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
-                child: const Icon(Icons.notifications_outlined, color: Colors.white70, size: 19),
+                child: Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white70,
+                  size: isDesktop ? 19 : 17,
+                ),
               ),
               Positioned(
                 top: 4,
@@ -183,7 +331,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               ),
             ],
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: isDesktop ? 10 : 4),
 
           // User Profile Avatar
           InkWell(
@@ -193,15 +341,15 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: isDesktop ? 36 : 32,
+                  height: isDesktop ? 36 : 32,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [AppColors.brand700, AppColors.brand300],
                       begin: Alignment.bottomLeft,
                       end: Alignment.topRight,
                     ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(isDesktop ? 10 : 8),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.brand500.withValues(alpha: 0.35),
@@ -212,10 +360,10 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                   child: Center(
                     child: Text(
                       (user?.name ?? 'U').substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: isDesktop ? 14 : 12,
                       ),
                     ),
                   ),
@@ -234,11 +382,20 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: isDesktop ? 8 : 2),
 
           // Logout
           IconButton(
-            icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted, size: 18),
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints.tightFor(
+              width: isDesktop ? 40 : 32,
+              height: isDesktop ? 40 : 32,
+            ),
+            icon: const Icon(
+              Icons.logout_rounded,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
             tooltip: 'Log out',
             onPressed: () {
               state.signOut();
@@ -287,14 +444,22 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                       child: const Center(
                         child: Text(
                           'L',
-                          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
                     const Text(
                       'LunaVerse',
-                      style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -324,14 +489,21 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                       borderRadius: BorderRadius.circular(11),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: isActive
                               ? AppColors.brand500.withValues(alpha: 0.15)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(11),
                           border: isActive
-                              ? Border.all(color: AppColors.brand500.withValues(alpha: 0.3))
+                              ? Border.all(
+                                  color: AppColors.brand500.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                )
                               : null,
                         ),
                         child: Row(
@@ -339,14 +511,20 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                             Icon(
                               item.icon,
                               size: 18,
-                              color: isActive ? AppColors.brand300 : AppColors.textMuted,
+                              color: isActive
+                                  ? AppColors.brand300
+                                  : AppColors.textMuted,
                             ),
                             const SizedBox(width: 12),
                             Text(
                               item.label,
                               style: TextStyle(
-                                color: isActive ? Colors.white : AppColors.textMuted,
-                                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                                color: isActive
+                                    ? Colors.white
+                                    : AppColors.textMuted,
+                                fontWeight: isActive
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
                                 fontSize: 13,
                               ),
                             ),
@@ -365,10 +543,10 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   }
 
   Widget _buildProfileCard(AppState state, dynamic user) {
-    const int level = 12;
-    const int xp = 4250;
-    const int maxXp = 5000;
-    const double xpProgress = xp / maxXp;
+    final int level = state.level;
+    final int xp = state.xpInLevel;
+    final int maxXp = state.xpToNextLevel;
+    final double xpProgress = state.xpLevelProgress;
 
     return Container(
       margin: const EdgeInsets.all(14),
@@ -436,14 +614,17 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.brand500.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(5),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Lv $level',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.brand300,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -451,9 +632,12 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                           ),
                         ),
                         const SizedBox(width: 5),
-                        const Text(
+                        Text(
                           '$xp XP',
-                          style: TextStyle(color: AppColors.textMuted, fontSize: 10),
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 10,
+                          ),
                         ),
                       ],
                     ),
@@ -473,22 +657,29 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 children: [
                   Text(
                     'XP to next level',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 9),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 9,
+                    ),
                   ),
-                  const Text(
+                  Text(
                     '$xp / $maxXp',
-                    style: TextStyle(color: AppColors.brand300, fontSize: 9, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: AppColors.brand300,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: const LinearProgressIndicator(
+                child: LinearProgressIndicator(
                   value: xpProgress,
                   minHeight: 5,
-                  backgroundColor: Color(0x1AFFFFFF),
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand500),
+                  backgroundColor: const Color(0x1AFFFFFF),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.brand500),
                 ),
               ),
             ],
@@ -498,7 +689,12 @@ class _DashboardLayoutState extends State<DashboardLayout> {
           // Streak & Coins
           Row(
             children: [
-              _buildMiniStat('🔥', '${state.streak.count}d', 'Streak', Colors.orange),
+              _buildMiniStat(
+                '🔥',
+                '${state.streak.count}d',
+                'Streak',
+                Colors.orange,
+              ),
               const SizedBox(width: 6),
               _buildMiniStat('🪙', '320', 'Coins', Colors.amber),
             ],
@@ -528,11 +724,18 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 children: [
                   Text(
                     value,
-                    style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     label,
-                    style: TextStyle(color: color.withValues(alpha: 0.55), fontSize: 8),
+                    style: TextStyle(
+                      color: color.withValues(alpha: 0.55),
+                      fontSize: 8,
+                    ),
                   ),
                 ],
               ),

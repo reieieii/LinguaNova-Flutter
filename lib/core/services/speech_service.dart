@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'speech_platform.dart' if (dart.library.html) 'speech_platform_web.dart';
 
 class SpeechService {
   factory SpeechService() => _instance;
@@ -30,16 +31,34 @@ class SpeechService {
     }
   }
 
-  Future<bool> speak(String text, {String languageId = 'japanese', double? rate}) async {
-    if (text.trim().isEmpty) return false;
-    await _initTts();
+  Future<bool> speak(
+    String text, {
+    String languageId = 'japanese',
+    double? rate,
+  }) {
+    return playAudio(text, languageId: languageId, rate: rate);
+  }
 
-    final config = _languageConfig[languageId.toLowerCase()] ??
+  Future<bool> playAudio(
+    String text, {
+    String languageId = 'japanese',
+    double? rate,
+  }) async {
+    if (text.trim().isEmpty) return false;
+
+    final config =
+        _languageConfig[languageId.toLowerCase()] ??
         {'lang': 'ja-JP', 'rate': 0.45};
     final String langCode = config['lang'] as String;
     final double speechRate = rate ?? (config['rate'] as double);
 
     try {
+      if (kIsWeb) {
+        speakWebDirect(text, langCode);
+        return true;
+      }
+
+      await _initTts();
       await _flutterTts.stop();
       await _flutterTts.setLanguage(langCode);
       await _flutterTts.setSpeechRate(speechRate);

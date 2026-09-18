@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
-enum GlassButtonVariant { primary, glass, outline, ghost }
+enum GlassButtonVariant { primary, glass, glassWhite, outline, ghost }
 
 class GlassButton extends StatefulWidget {
   const GlassButton({
@@ -100,6 +100,16 @@ class _GlassButtonState extends State<GlassButton> {
           ],
         );
         break;
+      case GlassButtonVariant.glassWhite:
+        decoration = BoxDecoration(
+          color: AppColors.brand700.withValues(alpha: _isHovered ? 0.3 : 0.15),
+          borderRadius: BorderRadius.circular(widget.isLarge ? 16 : 12),
+          border: Border.all(
+            color: AppColors.brand300.withValues(alpha: _isHovered ? 0.4 : 0.2),
+            width: 1,
+          ),
+        );
+        break;
       case GlassButtonVariant.outline:
         decoration = BoxDecoration(
           color: _isHovered
@@ -139,7 +149,7 @@ class _GlassButtonState extends State<GlassButton> {
           width: widget.fullWidth ? double.infinity : null,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(widget.isLarge ? 16 : 12),
-            child: widget.variant == GlassButtonVariant.glass
+            child: widget.variant == GlassButtonVariant.glass || widget.variant == GlassButtonVariant.glassWhite
                 ? BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                     child: Container(
@@ -166,6 +176,8 @@ class _GlassButtonState extends State<GlassButton> {
       case GlassButtonVariant.glass:
       case GlassButtonVariant.outline:
         return AppColors.brand300;
+      case GlassButtonVariant.glassWhite:
+        return Colors.white;
       case GlassButtonVariant.ghost:
         return _isHovered ? Colors.white : AppColors.textMuted;
     }

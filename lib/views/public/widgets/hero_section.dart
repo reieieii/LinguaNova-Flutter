@@ -38,19 +38,20 @@ class HeroSection extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           // Floating background characters
-          ..._chars.map((c) {
-            final xPos = screenWidth * c.xRatio;
-            final yPos = (screenHeight * 0.85) * c.yRatio;
-            return Positioned(
-              left: xPos,
-              top: yPos,
-              child: FloatingCharacterWidget(
-                char: c.char,
-                size: isMobile ? c.size * 0.7 : c.size,
-                delay: c.delay,
-              ),
-            );
-          }),
+          if (!isMobile)
+            ..._chars.map((c) {
+              final xPos = screenWidth * c.xRatio;
+              final yPos = (screenHeight * 0.85) * c.yRatio;
+              return Positioned(
+                left: xPos,
+                top: yPos,
+                child: FloatingCharacterWidget(
+                  char: c.char,
+                  size: c.size,
+                  delay: c.delay,
+                ),
+              );
+            }),
 
           // Hero Central Content
           SafeArea(
@@ -161,15 +162,10 @@ class HeroSection extends StatelessWidget {
                         ),
                         GlassButton(
                           onPressed: onWatchDemo,
-                          variant: GlassButtonVariant.glass,
+                          variant: GlassButtonVariant.glassWhite,
                           isLarge: true,
                           fullWidth: isMobile,
-                          icon: const Icon(
-                            Icons.play_circle_outline_rounded,
-                            size: 20,
-                            color: AppColors.brand300,
-                          ),
-                          child: const Text('Watch Demo'),
+                          child: const Text('Get Started'),
                         ),
                       ],
                     ),

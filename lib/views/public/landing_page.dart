@@ -114,6 +114,7 @@ class _LandingPageState extends State<LandingPage> {
           // Main Scrollable Content
           SingleChildScrollView(
             controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
                 const SizedBox(height: 80), // Offset for navbar
@@ -248,81 +249,87 @@ class _LanguagesSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 64),
-              Wrap(
-                spacing: 24,
-                runSpacing: 24,
-                alignment: WrapAlignment.center,
-                children: _languages.map((lang) {
-                  final cardWidth = isMobile
-                      ? double.infinity
-                      : (screenWidth > 1100 ? 360.0 : 300.0);
-                  return SizedBox(
-                    width: cardWidth,
-                    child: InkWell(
-                      onTap: onSelectLanguage,
-                      borderRadius: BorderRadius.circular(16),
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              lang['flag']!,
-                              style: const TextStyle(fontSize: 48),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              lang['name']!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount = isMobile ? 1 : (screenWidth > 1100 ? 3 : 2);
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 24,
+                      mainAxisSpacing: 24,
+                      childAspectRatio: isMobile ? 1.0 : 0.85,
+                    ),
+                    itemCount: _languages.length,
+                    itemBuilder: (context, index) {
+                      final lang = _languages[index];
+                      return InkWell(
+                        onTap: onSelectLanguage,
+                        borderRadius: BorderRadius.circular(16),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(28),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                lang['flag']!,
+                                style: const TextStyle(fontSize: 48),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              lang['desc']!,
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 14,
-                                height: 1.5,
+                              const SizedBox(height: 16),
+                              Text(
+                                lang['name']!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.brand500.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    lang['diff']!,
-                                    style: const TextStyle(
-                                      color: AppColors.brand300,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                              const SizedBox(height: 8),
+                              Text(
+                                lang['desc']!,
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 14,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.brand500.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      lang['diff']!,
+                                      style: const TextStyle(
+                                        color: AppColors.brand300,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  '~${lang['hours']}',
-                                  style: const TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 13,
+                                  Text(
+                                    '~${lang['hours']}',
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
-                }).toList(),
+                },
               ),
             ],
           ),

@@ -8,9 +8,11 @@ import '../../pages/dashboard/progress_page.dart';
 import '../../pages/dashboard/settings_page.dart';
 import '../../pages/dashboard/vocabulary_page.dart';
 import '../../pages/language/hiragana_quiz_page.dart';
+import '../../pages/language/japanese_chart_page.dart';
 import '../../pages/language/language_hub_page.dart';
 import '../../pages/language/language_lesson_page.dart';
 import '../../pages/language/language_practice_page.dart';
+import '../../pages/language/language_quiz_page.dart';
 import '../../pages/language/language_study_page.dart';
 import '../../pages/navigation/dashboard_layout.dart';
 import '../../views/auth/auth_page.dart';
@@ -23,20 +25,13 @@ class AppRouter {
       // Public Landing Page
       GoRoute(
         path: '/',
-        builder: (context, state) => LandingPage(
-          onNavigateToAuth: () => context.go('/login'),
-        ),
+        builder: (context, state) =>
+            LandingPage(onNavigateToAuth: () => context.go('/login')),
       ),
 
       // Auth Page (Login / Register)
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const AuthPage(),
-      ),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => const AuthPage(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const AuthPage()),
+      GoRoute(path: '/register', builder: (context, state) => const AuthPage()),
 
       // Dashboard Routes wrapped in Acrylic Glass DashboardLayout
       GoRoute(
@@ -124,6 +119,27 @@ class AppRouter {
           );
         },
       ),
+      // Japanese Kana chart pages — MUST be declared BEFORE the :lesson wildcard
+      GoRoute(
+        path: '/language/:lang/study/hiragana-chart',
+        builder: (context, state) {
+          final lang = state.pathParameters['lang'] ?? 'japanese';
+          return DashboardLayout(
+            currentRoute: '/languages',
+            child: JapaneseChartPage(languageId: lang, chartType: 'hiragana'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/language/:lang/study/katakana-chart',
+        builder: (context, state) {
+          final lang = state.pathParameters['lang'] ?? 'japanese';
+          return DashboardLayout(
+            currentRoute: '/languages',
+            child: JapaneseChartPage(languageId: lang, chartType: 'katakana'),
+          );
+        },
+      ),
       GoRoute(
         path: '/language/:lang/study/:lesson',
         builder: (context, state) {
@@ -152,6 +168,16 @@ class AppRouter {
           return DashboardLayout(
             currentRoute: '/practice',
             child: HiraganaQuizPage(languageId: lang),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/language/:lang/practice/quiz',
+        builder: (context, state) {
+          final lang = state.pathParameters['lang'] ?? 'japanese';
+          return DashboardLayout(
+            currentRoute: '/practice',
+            child: LanguageQuizPage(languageId: lang),
           );
         },
       ),

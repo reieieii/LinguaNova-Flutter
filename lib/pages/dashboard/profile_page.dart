@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../presentation/app_state.dart';
@@ -14,20 +15,17 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final TextEditingController _nameController;
-  late final TextEditingController _emailController;
 
   @override
   void initState() {
     super.initState();
     final user = context.read<AppState>().currentUser;
     _nameController = TextEditingController(text: user?.name ?? '');
-    _emailController = TextEditingController(text: user?.email ?? '');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -35,6 +33,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final user = state.currentUser;
+    final displayName = user?.name.trim().isEmpty ?? true
+        ? 'Learner'
+        : user!.name.trim();
+    final initial = displayName.substring(0, 1).toUpperCase();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -65,7 +67,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   radius: 48,
                   backgroundColor: AppColors.brand700,
                   child: Text(
-                    (user?.name ?? 'U').substring(0, 1).toUpperCase(),
+                    initial,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 36,
@@ -75,7 +77,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  user?.name ?? 'Learner',
+                  displayName,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -100,28 +102,36 @@ class _ProfilePageState extends State<ProfilePage> {
                     labelStyle: const TextStyle(color: AppColors.textMuted),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Email Address',
-                    labelStyle: const TextStyle(color: AppColors.textMuted),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
 
                 GlassButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Profile updated successfully!')),
+                  onPressed: () async {
+                    final updated = await state.updateProfile(
+                      name: _nameController.text,
                     );
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        duration: const Duration(milliseconds: 900),
+                        content: Text(
+                          updated
+                              ? 'Profile updated successfully!'
+                              : 'Unable to update profile.',
+                        ),
+                      ),
+                    );
+                    if (updated) {
+                      await Future<void>.delayed(
+                        const Duration(milliseconds: 900),
+                      );
+                      if (!context.mounted) return;
+                      context.go('/dashboard');
+                    }
                   },
                   variant: GlassButtonVariant.primary,
                   child: const Text('Update Profile'),

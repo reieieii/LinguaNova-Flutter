@@ -37,30 +37,156 @@ class _AuthPageState extends State<AuthPage> {
     super.dispose();
   }
 
-  Future<void> submit() async {
-    setState(() => busy = true);
-    try {
-      final state = context.read<AppState>();
-      final email = emailController.text.trim().isEmpty
-          ? 'test@example.com'
-          : emailController.text.trim();
-      final name = nameController.text.trim().isEmpty
-          ? 'Learner'
-          : nameController.text.trim();
-      final password = passwordController.text;
+  // ── helpers ──────────────────────────────────────────────────────────────────
 
-      if (registerMode) {
-        await state.register(name, email, password);
-      } else {
-        await state.signIn(email, password);
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? const Color(0xFFB91C1C) : const Color(0xFF15803D),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: Duration(seconds: isError ? 5 : 4),
+      ),
+    );
+  }
+
+  void _showEmailConfirmationDialog() {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.dark800,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Text('📧', style: TextStyle(fontSize: 24)),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Konfirmasi Email',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Akun Anda berhasil dibuat!\n\n'
+          'Kami telah mengirimkan email konfirmasi ke alamat email yang Anda daftarkan. '
+          'Silakan cek kotak masuk (atau folder spam) dan klik link konfirmasi sebelum login.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.55),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              // Switch to login mode so user can sign in after confirming
+              setState(() => registerMode = false);
+            },
+            child: const Text(
+              'Mengerti, ke halaman Login',
+              style: TextStyle(color: AppColors.brand300, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── main submit ───────────────────────────────────────────────────────────────
+
+  Future<void> submit() async {
+    // Basic client-side validation
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+    final name = nameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar('Email dan password tidak boleh kosong.', isError: true);
+      return;
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      _showSnackBar('Format email tidak valid.', isError: true);
+      return;
+    }
+    if (password.length < 6) {
+      _showSnackBar('Password minimal 6 karakter.', isError: true);
+      return;
+    }
+    if (registerMode) {
+      if (name.isEmpty) {
+        _showSnackBar('Nama lengkap tidak boleh kosong.', isError: true);
+        return;
       }
-    } catch (e) {
-      debugPrint('Submit error: $e');
-    } finally {
-      if (mounted) {
-        setState(() => busy = false);
+      final confirm = confirmPasswordController.text;
+      if (password != confirm) {
+        _showSnackBar('Password dan konfirmasi password tidak cocok.', isError: true);
+        return;
+      }
+    }
+
+    setState(() => busy = true);
+
+    final appState = context.read<AppState>();
+
+    if (registerMode) {
+      // ── REGISTER ────────────────────────────────────────────────────────────
+      final success = await appState.register(name, email, password);
+
+      if (!mounted) return;
+      setState(() => busy = false);
+
+      if (!success && appState.registrationMessage != null) {
+        // Email confirmation required — show dialog
+        _showEmailConfirmationDialog();
+        return;
+      }
+      if (!success && appState.errorMessage != null) {
+        // Hard error (duplicate email, weak password, network, etc.)
+        _showSnackBar(appState.errorMessage!, isError: true);
+        return;
+      }
+      if (success) {
+        // Supabase confirmed immediately (e-mail confirmation disabled in project)
+        _showSnackBar('Akun berhasil dibuat! Selamat datang 🎉');
         context.go('/dashboard');
       }
+    } else {
+      // ── LOGIN ────────────────────────────────────────────────────────────────
+      final success = await appState.signIn(email, password);
+
+      if (!mounted) return;
+      setState(() => busy = false);
+
+      if (!success) {
+        _showSnackBar(
+          appState.errorMessage ?? 'Login gagal. Periksa email dan password Anda.',
+          isError: true,
+        );
+        return; // Block navigation — stay on login page
+      }
+
+      // Success — navigate to dashboard
+      context.go('/dashboard');
     }
   }
 
@@ -181,7 +307,10 @@ class _AuthPageState extends State<AuthPage> {
 
                       // Form Glass Card Container
                       GlassCard(
-                        padding: const EdgeInsets.all(32),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.sizeOf(context).width < 400 ? 18 : 32,
+                          vertical: 32,
+                        ),
                         child: Form(
                           key: formKey,
                           child: Column(
@@ -327,10 +456,19 @@ class _AuthPageState extends State<AuthPage> {
                                   setState(() => registerMode = !registerMode);
                                 },
                                 variant: GlassButtonVariant.glass,
-                                isLarge: true,
+                                isLarge: false,
                                 fullWidth: true,
-                                child: Text(
-                                  registerMode ? 'Already have an account? Log in' : 'Create an account',
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      registerMode
+                                          ? 'Already have an account? Log in'
+                                          : 'Create an account',
+                                      maxLines: 1,
+                                    ),
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 16),

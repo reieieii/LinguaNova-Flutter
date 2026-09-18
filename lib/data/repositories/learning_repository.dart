@@ -11,6 +11,12 @@ abstract class LearningRepository {
   Future<void> saveAttempt(String userId, QuizAttempt attempt);
   Future<UserStreak> getStreak(String userId);
   Future<UserStreak> saveStreak(String userId, UserStreak streak);
+  Future<int> getXp(String userId);
+  Future<void> saveXp(String userId, int totalXp);
+  /// Returns XP earned for a specific language (e.g. 'japanese').
+  Future<Map<String, int>> getAllLanguageXp(String userId);
+  /// Persists [xp] as the new total for [languageId].
+  Future<void> saveLanguageXp(String userId, String languageId, int xp);
 }
 
 class SupabaseLearningRepository implements LearningRepository {
@@ -115,6 +121,66 @@ class SupabaseLearningRepository implements LearningRepository {
       lastActivityDate: DateTime.tryParse(row['last_activity_date'] as String),
     );
   }
+
+  // ── XP ────────────────────────────────────────────────────────────────────
+
+  @override
+  Future<int> getXp(String userId) async {
+    try {
+      final row = await _client
+          .from('user_profiles')
+          .select('total_xp')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return (row?['total_xp'] as int?) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  @override
+  Future<void> saveXp(String userId, int totalXp) async {
+    try {
+      await _client.from('user_profiles').upsert(
+        {'user_id': userId, 'total_xp': totalXp},
+        onConflict: 'user_id',
+      );
+    } catch (e) {
+      debugPrint('saveXp error (user_profiles table may not exist): $e');
+    }
+  }
+
+  // ── Per-language XP ───────────────────────────────────────────────────────
+
+  @override
+  Future<Map<String, int>> getAllLanguageXp(String userId) async {
+    try {
+      final rows = await _client
+          .from('user_language_xp')
+          .select('language_id, xp')
+          .eq('user_id', userId);
+      return {
+        for (final r in rows)
+          (r['language_id'] as String): (r['xp'] as int? ?? 0),
+      };
+    } catch (e) {
+      debugPrint('getAllLanguageXp error: $e');
+      return {};
+    }
+  }
+
+  @override
+  Future<void> saveLanguageXp(
+      String userId, String languageId, int xp) async {
+    try {
+      await _client.from('user_language_xp').upsert(
+        {'user_id': userId, 'language_id': languageId, 'xp': xp},
+        onConflict: 'user_id,language_id',
+      );
+    } catch (e) {
+      debugPrint('saveLanguageXp error (user_language_xp table may not exist): $e');
+    }
+  }
 }
 
 class DemoLearningRepository implements LearningRepository {
@@ -210,4 +276,34 @@ class DemoLearningRepository implements LearningRepository {
   @override
   Future<UserStreak> saveStreak(String userId, UserStreak streak) async =>
       _streaks[userId] = streak;
+
+  // ── XP ────────────────────────────────────────────────────────────────────
+
+  final Map<String, int> _xp = {};
+
+  @override
+  Future<int> getXp(String userId) async => _xp[userId] ?? 0;
+
+  @override
+  Future<void> saveXp(String userId, int totalXp) async =>
+      _xp[userId] = totalXp;
+
+  // ── Per-language XP ───────────────────────────────────────────────────────
+
+  // key: '$userId:$languageId'
+  final Map<String, int> _langXp = {};
+
+  @override
+  Future<Map<String, int>> getAllLanguageXp(String userId) async {
+    final prefix = '$userId:';
+    return {
+      for (final e in _langXp.entries)
+        if (e.key.startsWith(prefix)) e.key.substring(prefix.length): e.value,
+    };
+  }
+
+  @override
+  Future<void> saveLanguageXp(
+          String userId, String languageId, int xp) async =>
+      _langXp['$userId:$languageId'] = xp;
 }

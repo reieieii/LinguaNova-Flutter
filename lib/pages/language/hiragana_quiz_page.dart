@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/services/speech_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../presentation/app_state.dart';
 import '../../presentation/widgets/glass_button.dart';
 import '../../presentation/widgets/glass_card.dart';
 
@@ -97,6 +99,10 @@ class _HiraganaQuizPageState extends State<HiraganaQuizPage> {
         setState(() {
           _isQuizFinished = true;
         });
+        // Award XP: _score already accumulated 10 XP per correct answer
+        if (_score > 0) {
+          context.read<AppState>().addLanguageXp(widget.languageId, _score);
+        }
       }
     });
   }

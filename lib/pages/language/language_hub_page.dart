@@ -15,10 +15,6 @@ class LanguageHubPage extends StatefulWidget {
 }
 
 class _LanguageHubPageState extends State<LanguageHubPage> {
-  int _selectedTab = 0;
-
-  static const List<String> _tabs = ['Hub', 'Study', 'Practice', 'Progress', 'Achievements'];
-
   static const Map<String, Map<String, dynamic>> _langConfigs = {
     'japanese': {
       'name': 'Japanese',
@@ -99,34 +95,43 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
     final Color themeColor = config['themeColor'] as Color;
     final state = context.watch<AppState>();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Breadcrumb
-          _buildBreadcrumb(context, config),
-          const SizedBox(height: 20),
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Back to Languages Button
+            InkWell(
+              onTap: () => context.go('/languages'),
+              child: const Text(
+                '← Back to Languages',
+                style: TextStyle(
+                  color: Color(0xFF9CA3AF),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
 
-          // Sub-Tabs Filter Bar
-          _buildSubTabs(),
-          const SizedBox(height: 24),
+            // Breadcrumb
+            _buildBreadcrumb(context, config),
+            const SizedBox(height: 16),
 
-          // Hero Banner
-          _buildHeroBanner(context, langKey, config, themeColor),
-          const SizedBox(height: 28),
+            // Hero Banner
+            _buildHeroBanner(context, langKey, config, themeColor, state),
+            const SizedBox(height: 28),
 
-          // Quick Action Cards (4 cards)
-          _buildQuickActionCards(context, langKey),
-          const SizedBox(height: 20),
+            // Quick Action Cards (4 cards)
+            _buildQuickActionCards(context, langKey),
+            const SizedBox(height: 20),
 
-          // Stats Row (4 stats boxes)
-          _buildStatsRow(config, state),
-          const SizedBox(height: 32),
-
-          // Study Modules Section
-          _buildStudyModulesSection(context, langKey, themeColor),
-        ],
+            // Stats Row (4 stats boxes)
+            _buildStatsRow(config, state),
+          ],
+        ),
       ),
     );
   }
@@ -141,7 +146,10 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
         ),
-        const Text(' / ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+        const Text(
+          ' / ',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
         InkWell(
           onTap: () => context.go('/languages'),
           child: const Text(
@@ -149,7 +157,10 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
         ),
-        const Text(' / ', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+        const Text(
+          ' / ',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
         Text(
           config['name'] as String,
           style: const TextStyle(
@@ -162,55 +173,20 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
     );
   }
 
-  Widget _buildSubTabs() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(_tabs.length, (i) {
-          final isActive = _selectedTab == i;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedTab = i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.brand500.withValues(alpha: 0.2)
-                      : Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isActive
-                        ? AppColors.brand500.withValues(alpha: 0.6)
-                        : Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Text(
-                  _tabs[i],
-                  style: TextStyle(
-                    color: isActive ? Colors.white : AppColors.textMuted,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
   Widget _buildHeroBanner(
     BuildContext context,
     String langKey,
     Map<String, dynamic> config,
     Color themeColor,
+    AppState state,
   ) {
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final langXp = state.getLanguageXpFor(langKey);
+    final langLevel = state.getLanguageLevel(langKey);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isMobile ? 18 : 28),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -233,53 +209,95 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Language code + flag
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${config['code']} ${config['name']} ${config['nativeName']}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
+          if (isMobile)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeroLanguageInfo(config, isMobile: true),
+                const SizedBox(height: 16),
+                GlassButton(
+                  onPressed: () => context.go('/language/$langKey/study'),
+                  variant: GlassButtonVariant.primary,
+                  fullWidth: true,
+                  icon: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 18,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    config['flag'] as String,
-                    style: const TextStyle(fontSize: 36),
+                  child: const Text('Continue Learning'),
+                ),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildHeroLanguageInfo(config),
+                const Spacer(),
+                GlassButton(
+                  onPressed: () => context.go('/language/$langKey/study'),
+                  variant: GlassButtonVariant.primary,
+                  icon: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 18,
                   ),
-                ],
-              ),
-              const Spacer(),
-              // Start button
-              GlassButton(
-                onPressed: () => context.go('/language/$langKey/study'),
-                variant: GlassButtonVariant.primary,
-                icon: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 18),
-                child: const Text('Continue Learning'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+                  child: const Text('Continue Learning'),
+                ),
+              ],
+            ),
+          SizedBox(height: isMobile ? 16 : 20),
 
           // Badges row
           Wrap(
             spacing: 10,
             runSpacing: 8,
             children: [
-              _heroBadge(Icons.track_changes_rounded, 'Level: ${config['level']}', AppColors.brand300),
-              _heroBadge(Icons.workspace_premium_rounded, '${config['certification']}', Colors.amber),
-              _heroBadge(Icons.bolt_rounded, 'XP: ${config['xp']}', Colors.lightGreenAccent),
-              _heroBadge(Icons.local_fire_department_rounded, 'Streak: ${config['streak']} days', Colors.orange),
+              _heroBadge(
+                Icons.track_changes_rounded,
+                'Level: $langLevel',
+                AppColors.brand300,
+              ),
+              _heroBadge(
+                Icons.workspace_premium_rounded,
+                '${config['certification']}',
+                Colors.amber,
+              ),
+              _heroBadge(
+                Icons.bolt_rounded,
+                'XP: $langXp',
+                Colors.lightGreenAccent,
+              ),
+              _heroBadge(
+                Icons.local_fire_department_rounded,
+                'Streak: ${state.streak.count} days',
+                Colors.orange,
+              ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeroLanguageInfo(
+    Map<String, dynamic> config, {
+    bool isMobile = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${config['code']} ${config['name']} ${config['nativeName']}',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: isMobile ? 22 : 26,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(config['flag'] as String, style: const TextStyle(fontSize: 36)),
+      ],
     );
   }
 
@@ -298,7 +316,11 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
           const SizedBox(width: 5),
           Text(
             label,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -345,9 +367,7 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
             children: cards.map((card) {
               return Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(
-                    right: card != cards.last ? 12 : 0,
-                  ),
+                  padding: EdgeInsets.only(right: card != cards.last ? 12 : 0),
                   child: _quickActionCard(context, card),
                 ),
               );
@@ -401,7 +421,10 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
                   const SizedBox(height: 2),
                   Text(
                     card['subtitle'] as String,
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -417,8 +440,10 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
     final int progress = config['progress'] as int;
     final int lessonsCompleted = config['lessonsCompleted'] as int;
     final int totalLessons = config['totalLessons'] as int;
-    final int xp = config['xp'] as int;
-    final int streak = config['streak'] as int;
+    // Read live per-language XP and streak from AppState
+    final String langKey = (config['name'] as String).toLowerCase();
+    final int xp = state.getLanguageXpFor(langKey);
+    final int streak = state.streak.count;
 
     final stats = [
       {
@@ -521,251 +546,4 @@ class _LanguageHubPageState extends State<LanguageHubPage> {
     );
   }
 
-  Widget _buildStudyModulesSection(BuildContext context, String langKey, Color themeColor) {
-    final modules = [
-      {
-        'title': 'Basic Characters & Kana',
-        'desc': 'Learn Hiragana, Katakana and basic strokes.',
-        'progress': 0.90,
-        'lessons': 5,
-        'lessonId': 'lesson-1',
-        'tag': 'Foundation',
-        'tagColor': Colors.greenAccent,
-      },
-      {
-        'title': 'Essential Greetings',
-        'desc': 'Everyday greetings, polite phrases & introduction.',
-        'progress': 0.65,
-        'lessons': 4,
-        'lessonId': 'lesson-2',
-        'tag': 'Communication',
-        'tagColor': AppColors.brand300,
-      },
-      {
-        'title': 'Numbers & Counter Suffixes',
-        'desc': 'Count items, people, hours & currency.',
-        'progress': 0.40,
-        'lessons': 4,
-        'lessonId': 'lesson-3',
-        'tag': 'Math',
-        'tagColor': Colors.amberAccent,
-      },
-      {
-        'title': 'Grammar Fundamentals',
-        'desc': 'Particles, sentence patterns and basic verbs.',
-        'progress': 0.20,
-        'lessons': 5,
-        'lessonId': 'lesson-4',
-        'tag': 'Grammar',
-        'tagColor': Colors.lightBlueAccent,
-      },
-      {
-        'title': 'Daily Conversation',
-        'desc': 'Common phrases for everyday situations.',
-        'progress': 0.0,
-        'lessons': 4,
-        'lessonId': 'lesson-5',
-        'tag': 'Speaking',
-        'tagColor': Colors.pinkAccent,
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Study Modules',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () => context.go('/language/$langKey/study'),
-              child: const Text(
-                'View All →',
-                style: TextStyle(color: AppColors.brand300, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 700;
-            if (isWide) {
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: modules.map((m) {
-                  return SizedBox(
-                    width: (constraints.maxWidth - 16) / 2,
-                    child: _moduleCard(context, langKey, m, themeColor),
-                  );
-                }).toList(),
-              );
-            }
-            return Column(
-              children: modules.map((m) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: _moduleCard(context, langKey, m, themeColor),
-                );
-              }).toList(),
-            );
-          },
-        ),
-        const SizedBox(height: 28),
-
-        // Hiragana Quiz CTA
-        _buildHiraganaQuizCTA(context, langKey),
-      ],
-    );
-  }
-
-  Widget _moduleCard(
-    BuildContext context,
-    String langKey,
-    Map<String, dynamic> m,
-    Color themeColor,
-  ) {
-    final double progress = m['progress'] as double;
-    final Color tagColor = m['tagColor'] as Color;
-    final bool isCompleted = progress >= 1.0;
-
-    return InkWell(
-      onTap: () => context.go('/language/$langKey/study/${m['lessonId']}'),
-      borderRadius: BorderRadius.circular(16),
-      child: GlassCard(
-        padding: const EdgeInsets.all(20),
-        borderRadius: 16,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Tag badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: tagColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: tagColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    m['tag'] as String,
-                    style: TextStyle(color: tagColor, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                if (isCompleted)
-                  const Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 18),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              m['title'] as String,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              m['desc'] as String,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 12,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Icon(Icons.menu_book_rounded, size: 13, color: AppColors.textMuted),
-                const SizedBox(width: 4),
-                Text(
-                  '${m['lessons']} lessons',
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                ),
-                const Spacer(),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 5,
-                backgroundColor: Colors.white.withValues(alpha: 0.08),
-                color: isCompleted ? Colors.greenAccent : themeColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHiraganaQuizCTA(BuildContext context, String langKey) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.amberAccent.withValues(alpha: 0.12),
-            AppColors.brand700.withValues(alpha: 0.2),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          const Text('🎮', style: TextStyle(fontSize: 36)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Hiragana Quiz',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Practice Japanese character recognition with interactive flashcards!',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          GlassButton(
-            onPressed: () => context.go('/language/$langKey/practice/hiragana'),
-            variant: GlassButtonVariant.primary,
-            child: const Text('Play Now'),
-          ),
-        ],
-      ),
-    );
-  }
 }

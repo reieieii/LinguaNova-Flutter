@@ -13,6 +13,15 @@ class AppUser {
   final String email;
   final String name;
   final UserRole role;
+
+  AppUser copyWith({String? email, String? name}) {
+    return AppUser(
+      id: id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      role: role,
+    );
+  }
 }
 
 class Language {

@@ -13,7 +13,7 @@ class LanguagesPage extends StatelessWidget {
       'flag': '🇯🇵',
       'desc': 'Master Kanji, Hiragana, and Katakana.',
       'diff': 'Hard',
-      'hours': '2,200h'
+      'hours': '2,200h',
     },
     {
       'id': 'chinese',
@@ -21,7 +21,7 @@ class LanguagesPage extends StatelessWidget {
       'flag': '🇨🇳',
       'desc': 'Learn Mandarin, Pinyin, and Hanzi.',
       'diff': 'Hard',
-      'hours': '2,200h'
+      'hours': '2,200h',
     },
     {
       'id': 'korean',
@@ -29,7 +29,7 @@ class LanguagesPage extends StatelessWidget {
       'flag': '🇰🇷',
       'desc': 'Read Hangul and learn grammar naturally.',
       'diff': 'Medium',
-      'hours': '1,200h'
+      'hours': '1,200h',
     },
     {
       'id': 'english',
@@ -37,7 +37,7 @@ class LanguagesPage extends StatelessWidget {
       'flag': '🇺🇸',
       'desc': 'Perfect your pronunciation and idioms.',
       'diff': 'Easy',
-      'hours': '600h'
+      'hours': '600h',
     },
     {
       'id': 'spanish',
@@ -45,106 +45,122 @@ class LanguagesPage extends StatelessWidget {
       'flag': '🇪🇸',
       'desc': 'Converse fluently in real-life situations.',
       'diff': 'Easy',
-      'hours': '600h'
+      'hours': '600h',
     },
   ];
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'All Languages',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'All Languages',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Select a language module to start or continue your study journey.',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 16,
+            const SizedBox(height: 8),
+            const Text(
+              'Select a language module to start or continue your study journey.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 16),
             ),
-          ),
-          const SizedBox(height: 32),
-          Wrap(
-            spacing: 24,
-            runSpacing: 24,
-            children: _languages.map((lang) {
-              final cardWidth = MediaQuery.sizeOf(context).width > 800
-                  ? (MediaQuery.sizeOf(context).width - 320) / 2
-                  : double.infinity;
-              return SizedBox(
-                width: cardWidth,
-                child: InkWell(
-                  onTap: () => context.go('/language/${lang['id']}'),
-                  borderRadius: BorderRadius.circular(16),
-                  child: GlassCard(
-                    padding: const EdgeInsets.all(28),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(lang['flag']!, style: const TextStyle(fontSize: 48)),
-                        const SizedBox(height: 16),
-                        Text(
-                          lang['name']!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          lang['desc']!,
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 14,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            const SizedBox(height: 32),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 800;
+                final isMobile = constraints.maxWidth < 600;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isWide ? 2 : 1,
+                    crossAxisSpacing: 20,
+                    mainAxisSpacing: isMobile ? 12 : 20,
+                    childAspectRatio: isWide ? 1.65 : 1.45,
+                  ),
+                  itemCount: _languages.length,
+                  itemBuilder: (context, index) {
+                    final lang = _languages[index];
+                    return InkWell(
+                      onTap: () => context.go('/language/${lang['id']}'),
+                      borderRadius: BorderRadius.circular(16),
+                      child: GlassCard(
+                        padding: EdgeInsets.all(isMobile ? 18 : 22),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.brand500.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                lang['diff']!,
-                                style: const TextStyle(
-                                  color: AppColors.brand300,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            Text(
+                              lang['flag']!,
+                              style: const TextStyle(fontSize: 56),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              lang['name']!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
+                            const SizedBox(height: 6),
                             Text(
-                              '~${lang['hours']}',
+                              lang['desc']!,
                               style: const TextStyle(
                                 color: AppColors.textMuted,
-                                fontSize: 13,
+                                fontSize: 14,
+                                height: 1.5,
                               ),
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.brand500.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    lang['diff']!,
+                                    style: const TextStyle(
+                                      color: AppColors.brand300,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '~${lang['hours']}',
+                                  style: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
